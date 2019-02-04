@@ -10,10 +10,17 @@ mainClassName = 'sonic.debris.neural.network.MainKt'
 
 repositories {
     mavenCentral()
+
+    maven {
+        url "http://dl.bintray.com/kyonifer/maven"
+        jcenter()
+    }
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"     
+    compile group: "com.kyonifer", name:"koma-core-ejml", version: "0.12"
+    compile group: "com.kyonifer", name:"koma-plotting", version: "0.12"
 }
 
 compileKotlin {
