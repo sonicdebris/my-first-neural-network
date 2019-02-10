@@ -1,28 +1,64 @@
 package sonic.debris.neural.network
 
 import koma.randn
+import DigitImage
 import loadDigitImages
 import java.io.File
-
 import koma.*
 import koma.extensions.*
 import koma.matrix.Matrix
+
+fun DigitImage.toCase(): Case {
+    val input = Matrix(data.size, 1) { r, _ -> data[r].toDouble() / 255.0 }
+    val output = Matrix(10, 1) { r, _ -> if (r == label) 1.0 else 0.0 }
+    assert(output.argMax() == label)
+    assert(input.numRows() == 784)
+    return Case(input, output)
+}
+
+fun randomGuess(cases: List<Case>): Int {
+    val outs = arrayListOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+    // guess over the entire set 11 times and return the best success rate
+    return (0 to 10).toList().map {
+        cases.filter { case ->
+            val res = outs.random()
+            val actualMax = case.output.argMax()
+            res == actualMax
+        }.count()
+    }.max() ?: -1
+}
+
+const val HIDDEN_LAYER_NUM_NEURONS = 30
+const val NUM_TRAINING_EPOCHS = 30
+const val MINI_BATCH_SIZE = 10
+const val LEARNING_RATE = 3.0
 
 fun main(args: Array<String>) {
     println("load images...")
 
     val images = loadDigitImages("train-labels","train-images")
-    println("loaded ${images.size}")
+    val cases = images.map { it.toCase() }
+    val testImages = loadDigitImages("test-labels", "test-images")
+    val testCases = testImages.map { it.toCase() }
+    println("Training over ${cases.size} cases, testing over ${testCases.size} cases.")
 
-    val network = Network(listOf(4,3,2))
-    val res = network.feedForward(eye(4,1))
-    println(res)
+    val guessSuccess = randomGuess(testCases)
+    println("Guessing - Num. correct answers: $guessSuccess, rate: ${guessSuccess.toFloat()/testCases.size*100}%")
 
-    val cases = (0..9).map {
-        Case(fill(4,1, it.toDouble()), fill(2,1, it.toDouble()))
+    val inLayerSize = cases[0].input.numRows()
+    check(inLayerSize == 784)
+
+    val outLayerSize = cases[0].output.numRows()
+    check(outLayerSize == 10)
+
+    val network = Network(listOf(inLayerSize, HIDDEN_LAYER_NUM_NEURONS, outLayerSize))
+
+    network.train(cases, MINI_BATCH_SIZE, NUM_TRAINING_EPOCHS, LEARNING_RATE) {
+
+        val nSuccess = network.test(testCases)
+        println("Epoch $it - Num. correct answers: $nSuccess, rate: ${nSuccess.toFloat()/testCases.size * 100}%")
+
     }
-
-    network.train(cases, 2, 3, 0.5)
 
 //    val dest = File(System.getProperty("user.dir"), "images").apply { mkdirs() }
 //    println("save some files to: ${dest.absolutePath}")
