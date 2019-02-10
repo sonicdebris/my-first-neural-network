@@ -8,11 +8,14 @@ import koma.*
 import koma.extensions.*
 import koma.matrix.Matrix
 
+fun Byte.toPositiveDouble() = (toInt() and 0xFF).toDouble()
+
 fun DigitImage.toCase(): Case {
-    val input = Matrix(data.size, 1) { r, _ -> data[r].toDouble() / 255.0 }
+    val input = Matrix(data.size, 1) { r, _ -> data[r].toPositiveDouble() / 255.0 }
     val output = Matrix(10, 1) { r, _ -> if (r == label) 1.0 else 0.0 }
-    assert(output.argMax() == label)
-    assert(input.numRows() == 784)
+    check(output.argMax() == label)
+    check(input.numRows() == 784)
+    check(input.min() >= 0.0)
     return Case(input, output)
 }
 
