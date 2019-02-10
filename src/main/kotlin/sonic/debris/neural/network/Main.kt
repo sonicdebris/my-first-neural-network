@@ -14,9 +14,15 @@ fun main(args: Array<String>) {
     val images = loadDigitImages("train-labels","train-images")
     println("loaded ${images.size}")
 
-    val network = Network(listOf(3,2,1))
-    val res = network.feedForward(eye(3,1))
+    val network = Network(listOf(4,3,2))
+    val res = network.feedForward(eye(4,1))
     println(res)
+
+    val cases = (0..9).map {
+        Case(fill(4,1, it.toDouble()), fill(2,1, it.toDouble()))
+    }
+
+    network.train(cases, 2, 3, 0.5)
 
 //    val dest = File(System.getProperty("user.dir"), "images").apply { mkdirs() }
 //    println("save some files to: ${dest.absolutePath}")
