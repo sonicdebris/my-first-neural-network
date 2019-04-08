@@ -11,8 +11,19 @@ fun sigmoid(x: Matrix<Double>): Matrix<Double> =  (exp(-x) + 1.0).epow(-1)
 fun sigmoidDerivative(x: Matrix<Double>): Matrix<Double> = sigmoid(x) emul (-sigmoid(x) + 1.0)
 fun quadraticCostDerivative(x: Matrix<Double>, y: Matrix<Double>): Matrix<Double> =  x - y
 
-data class Case(val input: Matrix<Double>, val output: Matrix<Double>)
+data class Case(val input: Matrix<Double>, val output: Matrix<Double>) {
+    init {
+        check(input.numCols() == 1)
+        check(output.numCols() == 1)
+    }
+}
+
 data class Gradients(val ws: List<Matrix<Double>>, val bs: List<Matrix<Double>>)
+
+data class TestResult(val y: Matrix<Double>, val expected: Int, val index: Int ) {
+    fun max() = y.argMax()
+    fun isSuccess() = max() == expected
+}
 
 typealias Function1 = (x: Matrix<Double>) -> Matrix<Double>
 typealias Function2 = (x: Matrix<Double>, y: Matrix<Double>) -> Matrix<Double>
@@ -152,8 +163,8 @@ class Network(
         return Gradients(wGrad, bGrad)
     }
 
-    fun test(cases: List<Case>) = cases.filter {
-            val res = feedForward(it.input)
-            res.argMax() == it.output.argMax()
-    }.count()
+    fun test(cases: List<Case>): List<TestResult> = cases.mapIndexed { i, c ->
+        TestResult(feedForward(c.input), c.output.argMax(), i)
+    }
+
 }

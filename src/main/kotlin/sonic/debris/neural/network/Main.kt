@@ -32,7 +32,7 @@ fun randomGuess(cases: List<Case>): Int {
 }
 
 const val HIDDEN_LAYER_NUM_NEURONS = 30
-const val NUM_TRAINING_EPOCHS = 30
+const val NUM_TRAINING_EPOCHS = 10
 const val MINI_BATCH_SIZE = 10
 const val LEARNING_RATE = 3.0
 
@@ -56,12 +56,46 @@ fun main(args: Array<String>) {
 
     val network = Network(listOf(inLayerSize, HIDDEN_LAYER_NUM_NEURONS, outLayerSize))
 
-    network.train(cases, MINI_BATCH_SIZE, NUM_TRAINING_EPOCHS, LEARNING_RATE) {
+    val successCountHistory = zeros(1, NUM_TRAINING_EPOCHS)
+    val errorImages = arrayListOf<DigitImage>()
+    val results = arrayListOf<TestResult>()
 
-        val nSuccess = network.test(testCases)
-        println("Epoch $it - Num. correct answers: $nSuccess, rate: ${nSuccess.toFloat()/testCases.size * 100}%")
+    network.train(cases, MINI_BATCH_SIZE, NUM_TRAINING_EPOCHS, LEARNING_RATE) { epoch ->
 
+        val res = network.test(testCases)
+        val nCorrect = res.count { it.isSuccess() }
+        successCountHistory[epoch] = nCorrect
+        println("Epoch $epoch - n. correct answers: $nCorrect, rate: ${nCorrect.toFloat()/testCases.size * 100}%")
+        if (epoch == NUM_TRAINING_EPOCHS - 1) {
+            results.addAll(res)
+        }
     }
+
+    figure(1)
+    plot(null, successCountHistory, "g")
+    ylabel("Correct evaluations")
+    xlabel("Epoch")
+
+    val good = results.filter {
+        it.isSuccess()
+    }.groupBy {
+        it.expected
+    }.maxBy {
+        it.value.count()
+    }?.component2() ?: emptyList()
+
+    figure(2)
+    good.maxBy { it.max() - it.y.mean() }?.let {
+        plot(null, it.y, "g", "best success")
+    }
+    good.minBy { it.max() - it.y.mean() }?.let {
+        plot(null, it.y, "r", "worst success")
+    }
+    ylabel("Amplitude")
+    xlabel("Neuron")
+
+
+
 
 //    val dest = File(System.getProperty("user.dir"), "images").apply { mkdirs() }
 //    println("save some files to: ${dest.absolutePath}")
